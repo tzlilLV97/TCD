@@ -5,7 +5,7 @@ Created on Tue Jul 12 15:04:56 2016
 @author: guttag, revised egrimson
 @modify for self usage by : tzlil lev or
 """
-
+sizes = {}
 class Node(object):
     def __init__(self, name):
         """Assumes name is a string"""
@@ -13,8 +13,8 @@ class Node(object):
     def getName(self):
         return self.name
     def __add__(self, other):
-
-
+        global sizes
+        return sizes[(self, other)]
     def __repr__(self):
         return self.name
 
@@ -36,6 +36,9 @@ class Digraph(object):
     its children"""
     def __init__(self):
         self.edges = {}
+        global sizes
+        if sizes!={}:
+            sizes = {}
     def addNode(self, node):
         if node in self.edges:
             raise ValueError('Duplicate node')
@@ -47,6 +50,8 @@ class Digraph(object):
         if not (src in self.edges and dest in self.edges):
             raise ValueError('Node not in graph')
         self.edges[src].append(dest)
+        global sizes
+        sizes[(src, dest)]=edge.length
     def childrenOf(self, node):
         return self.edges[node]
     def hasNode(self, node):
@@ -74,14 +79,14 @@ def buildCityGraph(graphType):
     g = graphType()
     for name in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'M', 'N', 'Z'): #Create 7 nodes
         g.addNode(Node(name))
-    g.addEdge(Edge(g.getNode('C'), g.getNode('E')))
+    g.addEdge(Edge(g.getNode('C'), g.getNode('E'),10))
     g.addEdge(Edge(g.getNode('E'), g.getNode('G')))
     g.addEdge(Edge(g.getNode('D'), g.getNode('F')))
     g.addEdge(Edge(g.getNode('F'), g.getNode('G')))
     g.addEdge(Edge(g.getNode('A'), g.getNode('C')))
     g.addEdge(Edge(g.getNode('A'), g.getNode('B')))
     g.addEdge(Edge(g.getNode('B'), g.getNode('D')))
-    g.addEdge(Edge(g.getNode('A'), g.getNode('M')))
+    g.addEdge(Edge(g.getNode('A'), g.getNode('M'), 2))
     g.addEdge(Edge(g.getNode('M'), g.getNode('N')))
     g.addEdge(Edge(g.getNode('N'), g.getNode('E')))
     g.addEdge(Edge(g.getNode('M'), g.getNode('Z')))
@@ -89,6 +94,17 @@ def buildCityGraph(graphType):
     # g.addEdge(Edge(g.getNode('Denver'), g.getNode('New York')))
     # g.addEdge(Edge(g.getNode('Los Angeles'), g.getNode('Boston')))
     return g
+
+def get_len(path):
+    total = 0
+    if path==[]:
+        return 0
+    elif not path:
+        return 0
+    else:
+        for i in range(len(path)-1):
+            total += path[i] + path[i+1]
+        return total
 
 
 def printPath(path):
@@ -111,7 +127,7 @@ def DFS(graph, start, end, path, shortest, toPrint = False):
         return path
     for node in graph.childrenOf(start):
         if node not in path: #avoid cycles
-            if shortest == None or sum(path) < sum(shortest):
+            if shortest == None or get_len(path) < get_len(shortest):
                 newPath = DFS(graph, node, end, path, shortest,
                               toPrint)
                 if newPath != None:
