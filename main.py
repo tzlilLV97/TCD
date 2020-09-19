@@ -13,8 +13,11 @@ class Node(object):
     def getName(self):
         return self.name
     def __add__(self, other):
-        global sizes
-        return sizes[(self, other)]
+        try:
+            global sizes
+            return sizes[(self, other)]
+        except:
+            return None
     def __repr__(self):
         return self.name
 
@@ -70,12 +73,12 @@ class Digraph(object):
         return result[:-1] #omit final newline
 
 class Graph(Digraph):
-    def addEdge(self, edge):
+    def addEdge(self, edge, length=1):
         Digraph.addEdge(self, edge)
-        rev = Edge(edge.getDestination(), edge.getSource())
+        rev = Edge(edge.getDestination(), edge.getSource(), length)
         Digraph.addEdge(self, rev)
     
-def buildCityGraph(graphType):
+def buildGraph(graphType):
     g = graphType()
     for name in ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'M', 'N', 'Z'): #Create 7 nodes
         g.addNode(Node(name))
@@ -119,7 +122,7 @@ def printPath(path):
 def DFS(graph, start, end, path, shortest, toPrint = False):
     """Assumes graph is a Digraph; start and end are nodes;
           path and shortest are lists of nodes
-       Returns a shortest path from start to end in graph"""
+       Returns a shortest path from start to end in graph ~ TCD Track"""
     path = path + [start]
     if toPrint:
         print('Current DFS path:', printPath(path))
@@ -135,24 +138,55 @@ def DFS(graph, start, end, path, shortest, toPrint = False):
         elif toPrint:
             print('Already visited', node)
     return shortest
-    
+
+def DFS_TPD(graph, start, end, path, longest, toPrint = False):
+    """Assumes graph is a Digraph; start and end are nodes;
+          path and shortest are lists of nodes
+       Returns a shortest path from start to end in graph ~ TCD Track"""
+    path = path + [start]
+    if toPrint:
+        print('Current DFS path:', printPath(path))
+    if start == end:
+        return path
+    for node in graph.childrenOf(start):
+        if node not in path: #avoid cycles
+            if longest == None or get_len(path) > get_len(longest):
+                newPath = DFS(graph, node, end, path, longest,
+                              toPrint)
+                if newPath != None:
+                    longest = newPath
+        elif toPrint:
+            print('Already visited', node)
+    return longest
+
 def shortestPath(graph, start, end, toPrint = False):
     """Assumes graph is a Digraph; start and end are nodes
        Returns a shortest path from start to end in graph"""
     return DFS(graph, start, end, [], None, toPrint)
+def longestPath(graph, start, end, toPrint=False):
+    """Assume the graph is a Digraph; start and end are Nodes
+    Returns a longest path from start to end in graph"""
+    return DFS_TPD(graph,start,end, [], None, toPrint)
 
 def testSP(source, destination):
-    g = buildCityGraph(Digraph)
+    g = buildGraph(Digraph)
     sp = shortestPath(g, g.getNode(source), g.getNode(destination),
-                      toPrint = True)
+                      toPrint = False)
     if sp != None:
         print('Shortest path from', source, 'to',
-              destination, 'is', printPath(sp))
+              destination, 'is', printPath(sp), "The Length is ", get_len(sp))
+    else:
+        print('There is no path from', source, 'to', destination)
+    lp = longestPath(g, g.getNode(source), g.getNode(destination))
+    if lp != None:
+        print('Longest path from', source, 'to',
+              destination, 'is', printPath(lp), "The Length is ", get_len(lp))
     else:
         print('There is no path from', source, 'to', destination)
 
+
 testSP('A', 'G')
-print()
+
 #testSP('Boston', 'Phoenix')
 #print()
 
@@ -164,7 +198,6 @@ def BFS(graph, start, end, toPrint = False):
     initPath = [start]
     pathQueue = [initPath]
     while len(pathQueue) != 0:
-        print(pathQueue)
         #Get and remove oldest element in pathQueue
         if printQueue:
             print('Queue:', len(pathQueue))
